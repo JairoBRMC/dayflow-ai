@@ -1,0 +1,23 @@
+1
+Crea el repo en GitHub
+Repo nuevo, README inicial con el nombre del proyecto y una frase describiendo qué hace. 
+Estructura de carpetas: /backend y /frontend desde el principio, aunque frontend esté vacío.
+2
+Define el modelo de datos
+En papel o en un README, escribe las entidades: User, Task, Event, (más adelante ChatMessage). 
+Con campos y relaciones básicas. No necesitas perfección, solo un punto de partida que iterarás.
+3
+Monta el entorno de FastAPI
+Crea el proyecto, entorno virtual, instala fastapi, uvicorn, sqlalchemy, alembic, psycopg2-binary. 
+Levanta un endpoint /health que devuelva {"status": "ok"} para confirmar que todo arranca.
+4
+Levanta PostgreSQL con Docker
+Un docker-compose.yml con un servicio postgres es más rápido y realista que instalarlo local. 
+Conecta FastAPI a esa base con SQLAlchemy y confirma que puedes crear una tabla.
+5
+Primer modelo y migración
+Crea el modelo Task con Alembic, corre la migración, y prueba un endpoint POST /tasks que inserte un registro real en la base de datos.
+6
+Haz tu primer commit y push
+Aunque sea poco código, sube el esqueleto hoy mismo. 
+Empezar el hábito de commits pequeños y frecuentes desde el día uno es parte de lo que se evalúa cuando alguien mira tu repo.
