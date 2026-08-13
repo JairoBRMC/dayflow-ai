@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: dayflow-db
+    restart: always
+    environment:
+      POSTGRES_USER: dayflow_user
+      POSTGRES_PASSWORD: dayflow_pass
+      POSTGRES_DB: dayflow_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - dayflow_pgdata:/var/lib/postgresql/data
+
+volumes:
+  dayflow_pgdata:

@@ -5,3 +5,5 @@ app = FastAPI(title="Dayflow AI")
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+from database import engine  
