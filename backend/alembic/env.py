@@ -13,7 +13,7 @@ sys.path.append(os.getcwd())
 load_dotenv()
 
 from database import Base
-from models import Task  # importa todos tus modelos aquí
+from models import Event, Task  # importa todos tus modelos aquí
 
 
 # this is the Alembic Config object, which provides
