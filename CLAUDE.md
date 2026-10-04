@@ -16,26 +16,27 @@ Dayflow AI is a personal task/goal planning assistant with an AI chat that helps
 - **Frontend:** React + TypeScript (not started — `frontend/` is currently empty)
 - **AI:** OpenAI API — function calling + RAG (not implemented yet)
 - **Testing:** pytest + FastAPI's `TestClient`
-- **Infra:** Docker (Postgres today; GitHub Actions planned)
+- **Infra:** Docker — two Postgres services in [docker-compose.yml](docker-compose.yml), `db` (dev, port 5433) and `db_test` (pytest, port 5434); GitHub Actions planned
 
 ## Commands
 
 All backend commands run from `backend/` with the virtualenv (`backend/venv`) activated.
 
 ```
-# Start Postgres (from repo root)
+# Start both Postgres instances -- dev (db) and test (db_test) -- from repo root
 docker-compose up -d
 
 # Run the API with reload
 uvicorn main:app --reload
 
-# Create a new migration from model changes
+# Create a new migration from model changes (applies to the dev DB, DATABASE_URL)
 alembic revision --autogenerate -m "descripcion en español"
 
-# Apply migrations
+# Apply migrations to the dev DB
 alembic upgrade head
 
-# Run the test suite (requires Postgres up and migrations applied — see below)
+# Run the test suite -- requires db_test up; conftest.py migrates it to head
+# automatically, so there's no separate "alembic upgrade" step for tests
 pytest
 
 # Run a single test
@@ -44,11 +45,11 @@ pytest tests/test_tasks.py::test_get_task_not_found_returns_404
 
 There is no lint or CI setup yet — those commands don't exist in this repo currently.
 
-`.env` needs a `SECRET_KEY` (JWT signing secret) alongside `DATABASE_URL` — generate one with `python -c "import secrets; print(secrets.token_hex(32))"`. Like `DATABASE_URL`, `database.py`/`auth.py` raise a `RuntimeError` on startup if it's missing rather than failing later with a confusing error.
+`.env` needs a `SECRET_KEY` (JWT signing secret) alongside `DATABASE_URL` and `TEST_DATABASE_URL` — generate one with `python -c "import secrets; print(secrets.token_hex(32))"`. Like `DATABASE_URL`, `database.py`/`auth.py` raise a `RuntimeError` on startup if it's missing rather than failing later with a confusing error; `tests/conftest.py` does the same for `TEST_DATABASE_URL`.
 
 `requirements.txt` pins `bcrypt==4.0.1`: passlib 1.7.4 (unmaintained) reads `bcrypt.__about__.__version__` to detect the backend, which `bcrypt>=4.1` removed, so anything newer breaks `CryptContext(schemes=["bcrypt"])` at the first `.hash()`/`.verify()` call. Don't bump `bcrypt` past `4.0.x` without also moving off passlib.
 
-Tests run against the real dev Postgres from `docker-compose`, not an in-memory/SQLite DB: `models.py` uses `sqlalchemy.dialects.postgresql.UUID`, which isn't portable to SQLite, so hitting the real dev database is simpler than maintaining a second schema. Each test that needs a row creates it via the API and deletes it in fixture teardown (see the `created_task`/`created_event` fixtures in `tests/`) rather than relying on shared fixture data, so the dev DB stays clean between runs.
+**Tests run against their own Postgres, never the dev database.** `docker-compose.yml` defines a second service, `db_test` (port `5434`, db `dayflow_test_db`), and `tests/conftest.py` points at it via `TEST_DATABASE_URL`, not `DATABASE_URL`. A session-scoped autouse fixture in `conftest.py` runs `alembic upgrade head` against `TEST_DATABASE_URL` before the first test (temporarily reassigning the `DATABASE_URL` env var just for that one call, since `alembic/env.py` reads it directly — the dev DB is never touched), so the test DB goes from empty to the full schema automatically; there's no manual migration step before running `pytest`. `main.py`'s `get_db` dependency is overridden (`app.dependency_overrides[get_db]`) to hand out sessions bound to the test engine instead, so the app code under test is unmodified. Cleanup between tests is still explicit create-via-API-then-delete-in-teardown (see the fixtures in `tests/conftest.py`), not transaction-per-test-with-rollback: the suite's actual cost is bcrypt hashing (~100ms+ per register/login), not database I/O, so a transactional-rollback harness would add real complexity (wrapping `get_db()` in nested `SAVEPOINT`s so the app's own `db.commit()` calls don't break the rollback) for a speedup that wouldn't show up anywhere. Revisit that trade-off if the suite grows enough that DB cleanup, not hashing, becomes the bottleneck.
 
 ## Architecture
 
@@ -60,7 +61,7 @@ The backend is a flat, single-package FastAPI app (no `app/` src layout, no rout
 - [auth.py](backend/auth.py) — password hashing (`hash_password`/`verify_password` via passlib), JWT creation/decoding (`create_access_token`, `create_refresh_token`, `decode_token`), and the `get_current_user` dependency that every protected endpoint depends on. Reads `SECRET_KEY` from `.env` the same way `database.py` reads `DATABASE_URL` (`RuntimeError` if missing).
 - [main.py](backend/main.py) — the FastAPI app and all endpoints (no routers module yet, everything in one file).
 - [alembic/env.py](backend/alembic/env.py) — reads `DATABASE_URL` from `.env` itself and points `target_metadata` at `Base.metadata`; every new model must be imported here (next to the existing `Task`/`Event`/`User` imports) or `--autogenerate` won't see it.
-- [tests/conftest.py](backend/tests/conftest.py) — shared fixtures: `auth_headers`/`registered_email` (one test user, via `registered_user`) and `other_user_headers` (a second, independent user, for cross-user isolation tests). Both clean up their user in teardown; `ondelete="CASCADE"` on `Task.user_id`/`Event.user_id` takes their rows with them.
+- [tests/conftest.py](backend/tests/conftest.py) — points the app at the dedicated test database and migrates it (see Commands above), then defines shared fixtures: `auth_headers`/`registered_email` (one test user, via `registered_user`) and `other_user_headers` (a second, independent user, for cross-user isolation tests). Both clean up their user in teardown; `ondelete="CASCADE"` on `Task.user_id`/`Event.user_id` takes their rows with them.
 - [tests/test_tasks.py](backend/tests/test_tasks.py), [tests/test_events.py](backend/tests/test_events.py), [tests/test_auth.py](backend/tests/test_auth.py) — pytest suites, one file per entity/concern.
 
 Data model conventions (see [backend/README.md](backend/README.md) for the full planned schema and the ER diagram at `backend/Docs/er-diagram.png`):

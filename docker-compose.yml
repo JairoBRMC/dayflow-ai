@@ -12,5 +12,22 @@ services:
     volumes:
       - dayflow_pgdata:/var/lib/postgresql/data
 
+  # Postgres aparte para los tests (tests/conftest.py), nunca comparte datos con "db".
+  # Empieza vacía: antes de correr pytest hace falta aplicarle las migraciones de
+  # Alembic (ver README/CLAUDE.md), igual que a la de desarrollo.
+  db_test:
+    image: postgres:16
+    container_name: dayflow-db-test
+    restart: always
+    environment:
+      POSTGRES_USER: dayflow_user
+      POSTGRES_PASSWORD: dayflow_pass
+      POSTGRES_DB: dayflow_test_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - dayflow_pgdata_test:/var/lib/postgresql/data
+
 volumes:
   dayflow_pgdata:
+  dayflow_pgdata_test:
