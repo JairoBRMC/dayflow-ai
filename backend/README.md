@@ -33,19 +33,30 @@ Instrucciones de instalación y arranque en el [README de la raíz](../README.md
 | user_id | FK → User | Propietario del evento |
 | created_at | datetime | Fecha de creación |
 
-### ChatMessage (planeado, todavía no implementado)
+### Conversation
 | Campo | Tipo | Descripción |
 |---|---|---|
 | id | UUID | Identificador único |
+| title | string (opcional) | Título de la conversación |
+| user_id | FK → User | Propietario de la conversación |
+| created_at | datetime | Fecha de creación |
+
+### ChatMessage
+| Campo | Tipo | Descripción |
+|---|---|---|
+| id | UUID | Identificador único |
+| conversation_id | FK → Conversation | Conversación a la que pertenece |
 | role | enum | user / assistant |
 | content | text | Contenido del mensaje |
 | created_at | datetime | Fecha del mensaje |
-| user_id | FK → User | Propietario de la conversación |
+
+> `ChatMessage` no tiene `user_id` propio: el dueño se hereda a través de `conversation_id → Conversation.user_id`, porque un mensaje solo tiene sentido dentro de la conversación de un usuario concreto. Todavía no hay forma de crear mensajes vía la API (eso llega con la integración de IA) — por ahora `Conversation`/`ChatMessage` solo tienen CRUD de gestión.
 
 ### Relaciones
 - Un **User** tiene muchas **Task** (1:N)
 - Un **User** tiene muchos **Event** (1:N)
-- Un **User** tiene muchos **ChatMessage** (1:N, planeado)
+- Un **User** tiene muchas **Conversation** (1:N)
+- Una **Conversation** tiene muchos **ChatMessage** (1:N)
 
 > `Task.user_id`/`Event.user_id` son `nullable=True` a nivel de base de datos por una razón histórica: cuando se añadió la FK ya existían filas de antes de tener auth. En vez de borrarlas se dejaron huérfanas (invisibles vía la API, nunca aparecen en los filtros por usuario). Todo lo creado a través de la API siempre lleva `user_id`.
 >
@@ -55,7 +66,7 @@ Instrucciones de instalación y arranque en el [README de la raíz](../README.md
 
 ## Endpoints
 
-Todos los endpoints bajo `/tasks` y `/events` requieren autenticación (`Authorization: Bearer <access_token>`) y solo devuelven/afectan datos del usuario autenticado — intentar acceder a un recurso de otro usuario da `404`, igual que si no existiera.
+Todos los endpoints bajo `/tasks`, `/events` y `/conversations` requieren autenticación (`Authorization: Bearer <access_token>`) y solo devuelven/afectan datos del usuario autenticado — intentar acceder a un recurso de otro usuario da `404`, igual que si no existiera.
 
 ### Auth
 | Método y ruta | Descripción |
@@ -83,6 +94,16 @@ El access token dura 30 minutos; el refresh, 7 días. No hay revocación de toke
 | `GET /events/{id}` | Un evento concreto. `404` si no existe o no es tuyo. |
 | `PUT /events/{id}` | Actualización parcial; si el resultado deja `end_time <= start_time`, `422`. |
 | `DELETE /events/{id}` | Borra el evento. `204` si se borró, `404` si no existía. |
+
+### Conversation
+| Método y ruta | Descripción |
+|---|---|
+| `POST /conversations` | Crea una conversación vacía. Body JSON `{title}` opcional. |
+| `GET /conversations` | Lista las conversaciones del usuario, más reciente primero. |
+| `GET /conversations/{id}` | La conversación con todos sus mensajes (`messages: []` si no tiene ninguno). `404` si no existe o no es tuya. |
+| `DELETE /conversations/{id}` | Borra la conversación y sus mensajes (cascada). `204` si se borró, `404` si no existía. |
+
+Todavía no hay un endpoint para enviar mensajes (`POST /conversations/{id}/messages` o similar) ni integración con ningún LLM — eso es el siguiente paso (Bloque 4.3 en adelante).
 
 Para probar la API de forma interactiva: `http://localhost:8000/docs` (el botón "Authorize" acepta las credenciales de `/auth/login` directamente).
 

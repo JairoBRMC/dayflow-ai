@@ -85,3 +85,32 @@ class Token(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class ConversationCreate(BaseModel):
+    title: Optional[str] = None
+
+
+class ConversationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: Optional[str]
+    created_at: datetime
+
+
+class MessageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    role: str
+    content: str
+    created_at: datetime
+
+
+class ConversationDetail(ConversationOut):
+    """ConversationOut + sus mensajes, para GET /conversations/{id}. GET /conversations
+    (lista) usa ConversationOut a secas -- no tiene sentido cargar todos los mensajes
+    de todas las conversaciones solo para listarlas."""
+
+    messages: list[MessageOut]

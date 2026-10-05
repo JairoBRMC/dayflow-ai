@@ -14,11 +14,15 @@ from auth import (
     verify_password,
 )
 from database import Base, get_db
-from models import Event, Task, User
+from models import ChatMessage, Conversation, Event, Task, User
 from schemas import (
+    ConversationCreate,
+    ConversationDetail,
+    ConversationOut,
     EventCreate,
     EventOut,
     EventUpdate,
+    MessageOut,
     Priority,
     RefreshRequest,
     TaskCreate,
@@ -186,5 +190,61 @@ def delete_event(
 ):
     event = _get_owned_or_404(Event, event_id, current_user.id, db)
     db.delete(event)
+    db.commit()
+    return Response(status_code=204)
+
+
+@app.post("/conversations", response_model=ConversationOut)
+def create_conversation(
+    payload: ConversationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    conversation = Conversation(title=payload.title, user_id=current_user.id)
+    db.add(conversation)
+    db.commit()
+    db.refresh(conversation)
+    return conversation
+
+
+@app.get("/conversations", response_model=list[ConversationOut])
+def list_conversations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return (
+        db.query(Conversation)
+        .filter(Conversation.user_id == current_user.id)
+        .order_by(Conversation.created_at.desc())
+        .all()
+    )
+
+
+@app.get("/conversations/{conversation_id}", response_model=ConversationDetail)
+def get_conversation(
+    conversation_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    conversation = _get_owned_or_404(Conversation, conversation_id, current_user.id, db)
+    messages = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.conversation_id == conversation.id)
+        .order_by(ChatMessage.created_at)
+        .all()
+    )
+    return ConversationDetail(
+        id=conversation.id,
+        title=conversation.title,
+        created_at=conversation.created_at,
+        messages=[MessageOut.model_validate(message) for message in messages],
+    )
+
+
+@app.delete("/conversations/{conversation_id}", status_code=204)
+def delete_conversation(
+    conversation_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    conversation = _get_owned_or_404(Conversation, conversation_id, current_user.id, db)
+    db.delete(conversation)
     db.commit()
     return Response(status_code=204)
