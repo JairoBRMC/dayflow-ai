@@ -114,3 +114,7 @@ class ConversationDetail(ConversationOut):
     de todas las conversaciones solo para listarlas."""
 
     messages: list[MessageOut]
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1)

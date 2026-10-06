@@ -13,7 +13,7 @@ Asistente inteligente para organizar tareas y objetivos personales, con un chat 
 - **Validación:** Pydantic v2
 - **Migraciones:** Alembic
 - **Tests:** pytest + `TestClient` de FastAPI
-- **IA:** OpenAI API (function calling + RAG) — planeado, todavía no implementado
+- **IA:** Groq para el chat — function calling y RAG sobre las tareas/eventos reales del usuario, planeados, todavía no implementados
 - **Infraestructura:** Docker, GitHub Actions (planeado)
 
 Más detalle del modelo de datos y los endpoints en [backend/README.md](backend/README.md).
@@ -36,6 +36,8 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edita .env y genera un SECRET_KEY propio:
 python -c "import secrets; print(secrets.token_hex(32))"
+# Y añade tu GROQ_API_KEY (https://console.groq.com/keys) -- solo hace falta
+# para el chat (POST /conversations/{id}/chat), el resto de la API funciona sin ella.
 
 # 4. Aplica las migraciones a la base de desarrollo
 alembic upgrade head
@@ -58,7 +60,7 @@ Los tests corren contra su propia base de datos (el servicio `db_test` de `docke
 ## Roadmap
 - [x] Backend base: CRUD de `Task` y `Event`, autenticación JWT (registro/login/refresh), endpoints protegidos y filtrados por usuario
 - [ ] Frontend base
-- [ ] Chat con IA para planificación diaria (function calling + RAG)
+- [ ] Chat con IA para planificación diaria — `Conversation`/`ChatMessage` y `POST /conversations/{id}/chat` (Groq, con historial) ya funcionan; falta function calling y RAG sobre las tareas/eventos reales
 - [ ] Estadísticas
 - [x] Tests (pytest, base de datos de test dedicada) — falta CI/CD
 - [ ] Despliegue

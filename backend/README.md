@@ -50,7 +50,7 @@ Instrucciones de instalación y arranque en el [README de la raíz](../README.md
 | content | text | Contenido del mensaje |
 | created_at | datetime | Fecha del mensaje |
 
-> `ChatMessage` no tiene `user_id` propio: el dueño se hereda a través de `conversation_id → Conversation.user_id`, porque un mensaje solo tiene sentido dentro de la conversación de un usuario concreto. Todavía no hay forma de crear mensajes vía la API (eso llega con la integración de IA) — por ahora `Conversation`/`ChatMessage` solo tienen CRUD de gestión.
+> `ChatMessage` no tiene `user_id` propio: el dueño se hereda a través de `conversation_id → Conversation.user_id`, porque un mensaje solo tiene sentido dentro de la conversación de un usuario concreto. La única forma de crear un `ChatMessage` es a través de `POST /conversations/{id}/chat` (ver más abajo).
 
 ### Relaciones
 - Un **User** tiene muchas **Task** (1:N)
@@ -102,8 +102,9 @@ El access token dura 30 minutos; el refresh, 7 días. No hay revocación de toke
 | `GET /conversations` | Lista las conversaciones del usuario, más reciente primero. |
 | `GET /conversations/{id}` | La conversación con todos sus mensajes (`messages: []` si no tiene ninguno). `404` si no existe o no es tuya. |
 | `DELETE /conversations/{id}` | Borra la conversación y sus mensajes (cascada). `204` si se borró, `404` si no existía. |
+| `POST /conversations/{id}/chat` | Body JSON `{message}`. Guarda el mensaje, llama a Groq con todo el historial de la conversación como contexto, guarda y devuelve la respuesta del asistente. `502` si Groq falla (el mensaje del usuario queda guardado igualmente). |
 
-Todavía no hay un endpoint para enviar mensajes (`POST /conversations/{id}/messages` o similar) ni integración con ningún LLM — eso es el siguiente paso (Bloque 4.3 en adelante).
+El chat necesita `GROQ_API_KEY` en `.env` (ver `.env.example`); el resto de la API funciona sin ella. Todavía no hace function calling ni RAG: Groq solo ve el historial de mensajes, no las tareas/eventos reales del usuario.
 
 Para probar la API de forma interactiva: `http://localhost:8000/docs` (el botón "Authorize" acepta las credenciales de `/auth/login` directamente).
 
@@ -112,6 +113,8 @@ Para probar la API de forma interactiva: `http://localhost:8000/docs` (el botón
 ```bash
 pytest
 ```
+
+No hace falta `GROQ_API_KEY` para correr los tests: `tests/test_chat.py` sustituye la llamada real a Groq por un doble determinista (ver el fixture `fake_groq`), así que la suite no gasta cuota ni depende de la red. La conectividad real con Groq se comprueba a mano (llamando a `groq_client.get_chat_completion` directamente), no en pytest.
 
 Los tests usan una base de datos de Postgres aparte (`db_test` en el [docker-compose.yml](../docker-compose.yml) de la raíz, puerto `5434`), nunca la de desarrollo. `tests/conftest.py` lee `TEST_DATABASE_URL` del `.env` y le aplica las migraciones de Alembic automáticamente antes del primer test, así que solo hace falta tener el contenedor `db_test` levantado (`docker-compose up -d` desde la raíz ya lo incluye).
 

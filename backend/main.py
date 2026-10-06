@@ -3,6 +3,7 @@ from typing import Optional, Type, TypeVar
 
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.security import OAuth2PasswordRequestForm
+from groq import APIError as GroqAPIError
 from sqlalchemy.orm import Session
 
 from auth import (
@@ -14,8 +15,10 @@ from auth import (
     verify_password,
 )
 from database import Base, get_db
+from groq_client import get_chat_completion
 from models import ChatMessage, Conversation, Event, Task, User
 from schemas import (
+    ChatRequest,
     ConversationCreate,
     ConversationDetail,
     ConversationOut,
@@ -248,3 +251,38 @@ def delete_conversation(
     db.delete(conversation)
     db.commit()
     return Response(status_code=204)
+
+
+@app.post("/conversations/{conversation_id}/chat", response_model=MessageOut)
+def chat(
+    conversation_id: uuid.UUID,
+    payload: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    conversation = _get_owned_or_404(Conversation, conversation_id, current_user.id, db)
+
+    user_message = ChatMessage(conversation_id=conversation.id, role="user", content=payload.message)
+    db.add(user_message)
+    db.commit()
+
+    # Todo el historial, incluido el mensaje que se acaba de guardar, para que Groq
+    # "recuerde" la conversación -- sin esto cada mensaje se contestaría aislado.
+    history = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.conversation_id == conversation.id)
+        .order_by(ChatMessage.created_at)
+        .all()
+    )
+    groq_messages = [{"role": message.role, "content": message.content} for message in history]
+
+    try:
+        reply_content = get_chat_completion(groq_messages)
+    except GroqAPIError as exc:
+        raise HTTPException(status_code=502, detail="No se pudo obtener respuesta de Groq") from exc
+
+    assistant_message = ChatMessage(conversation_id=conversation.id, role="assistant", content=reply_content)
+    db.add(assistant_message)
+    db.commit()
+    db.refresh(assistant_message)
+    return assistant_message
