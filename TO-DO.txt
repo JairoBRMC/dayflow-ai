@@ -1,3 +1,4 @@
+ESTRUCTURA INCIAL
 1
 Crea el repo en GitHub
 Repo nuevo, README inicial con el nombre del proyecto y una frase describiendo qué hace. 
@@ -21,3 +22,71 @@ Crea el modelo Task con Alembic, corre la migración, y prueba un endpoint POST 
 Haz tu primer commit y push
 Aunque sea poco código, sube el esqueleto hoy mismo. 
 Empezar el hábito de commits pequeños y frecuentes desde el día uno es parte de lo que se evalúa cuando alguien mira tu repo.
+
+CONTINUACIÓN DEL PROYECTO
+Lo que queda para completar la aplicación, siguiendo el plan original:
+
+Backend (esta semana / próxima)
+
+Completar CRUD: GET /tasks, GET /tasks/{id}, PUT /tasks/{id}, DELETE /tasks/{id}
+Modelo Event (para el calendario) con su propio CRUD
+Autenticación: modelo User, registro, login con JWT, y ligar Task/Event a cada usuario (user_id)
+
+Frontend (aprendiendo React+TS en el camino)
+
+Setup con Vite + TypeScript
+Login/registro consumiendo tu API
+Vista de lista de tareas (CRUD desde la UI)
+Vista de calendario simple
+
+IA (el diferencial del proyecto)
+
+Modelo ChatMessage + endpoint de chat
+Function calling: que la IA cree/modifique tareas desde lenguaje natural
+RAG básico: que use tus tareas reales como contexto al planificar el día
+
+Cierre
+
+Estadísticas (tareas completadas, por prioridad, etc.)
+Tests (pytest + Vitest)
+CI/CD con GitHub Actions
+Dockerizar y desplegar (Vercel + Railway/Render)
+README final con capturas y demo en vivo
+
+
+
+
+Bloques de trabajo:
+Bloque 1 — Completar CRUD de Task
+GET /tasks — listar todas las tareas (de momento sin filtrar por usuario, eso vendrá con auth)
+GET /tasks/{id} — una tarea concreta, devolver 404 si no existe
+PUT /tasks/{id} — actualizar una tarea (título, descripción, status, priority, due_date)
+DELETE /tasks/{id} — borrar una tarea, devolver 404 si no existe
+Query params opcionales en GET /tasks: filtrar por status y priority (ej. /tasks?status=done)
+Bloque 2 — Modelo Event (calendario)
+Modelo Event en models.py (title, start_time, end_time, description opcional)
+Migración con Alembic para la tabla events
+CRUD completo de Event: POST, GET (lista), GET /{id}, PUT /{id}, DELETE /{id} — mismo patrón que Task
+Bloque 3 — Autenticación
+Modelo User (email, hashed_password, created_at) + migración
+Endpoint POST /auth/register — crea usuario, hashea password con passlib/bcrypt
+Endpoint POST /auth/login — verifica credenciales, devuelve JWT (access token)
+Dependencia get_current_user que valida el token JWT y lo puedes usar en cualquier endpoint protegido
+Añadir user_id (FK) a Task y Event + migración correspondiente
+Proteger todos los endpoints de Task/Event con get_current_user, y filtrar automáticamente por el usuario autenticado (nadie debe ver tareas de otro usuario)
+(Opcional pero recomendado) Refresh token, para no obligar a reloguear cada pocos minutos
+Bloque 4 — Chat con IA
+Modelo ChatMessage (role, content, created_at, user_id) + migración
+Endpoint POST /chat que recibe un mensaje del usuario y llama a la API de OpenAI (o Anthropic)
+Guardar el historial de la conversación en ChatMessage, y enviarlo como contexto en cada llamada (para que la IA "recuerde" la conversación)
+Function calling: define funciones tipo create_task, update_task, list_tasks que la IA pueda invocar cuando el usuario le pida cosas como "añade una tarea para mañana"
+RAG básico: antes de responder, recupera las tareas/eventos reales del usuario y pásaselos como contexto al modelo, para que planifique el día con datos reales, no inventados
+Bloque 5 — Estadísticas
+Endpoint GET /stats — devuelve algo como: nº de tareas por status, nº por prioridad, tareas completadas esta semana
+(Opcional) Endpoint de tendencia temporal, ej. tareas completadas por día en los últimos 30 días, para poder graficarlo en el frontend
+Bloque 6 — Calidad y cierre del backend
+Tests con pytest para los endpoints principales (al menos: crear tarea, listar, login, endpoint protegido sin token → 401)
+Manejo de errores consistente (por ejemplo, un exception_handler global para respuestas de error uniformes)
+Variables de entorno completas y documentadas en .env.example (clave de OpenAI/Anthropic incluida)
+requirements.txt actualizado y limpio
+README del backend actualizado con cómo levantar todo desde cero (Docker, migraciones, variables de entorno)
