@@ -93,3 +93,17 @@ def test_refresh_rejects_an_access_token_as_refresh_token(auth_headers):
 def test_refresh_rejects_garbage_token():
     response = client.post("/auth/refresh", json={"refresh_token": "no-soy-un-jwt-valido"})
     assert response.status_code == 401
+
+
+def test_me_requires_auth():
+    response = client.get("/auth/me")
+    assert response.status_code == 401
+
+
+def test_me_returns_current_user(auth_headers, registered_email):
+    response = client.get("/auth/me", headers=auth_headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["email"] == registered_email
+    assert "password" not in body
+    assert "hashed_password" not in body

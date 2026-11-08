@@ -1,7 +1,9 @@
+import os
 import uuid
 from typing import Optional, Type, TypeVar
 
 from fastapi import Depends, FastAPI, HTTPException, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from groq import APIError as GroqAPIError
 from sqlalchemy.orm import Session
@@ -38,6 +40,19 @@ from schemas import (
 )
 
 app = FastAPI(title="Dayflow AI")
+
+# Sin esto el navegador bloquea toda petición del frontend (Vite, otro origen) aunque
+# la API responda bien -- CORS es una restricción del navegador, no se nota con curl
+# ni con axios/node. Lista separada por comas, configurable porque el puerto de Vite
+# puede no ser el 5173 por defecto si ese puerto ya está ocupado.
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 ModelType = TypeVar("ModelType", bound=Base)
 
@@ -92,6 +107,11 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
     )
+
+
+@app.get("/auth/me", response_model=UserOut)
+def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
 
 
 @app.post("/tasks", response_model=TaskOut)

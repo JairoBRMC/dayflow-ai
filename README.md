@@ -3,10 +3,10 @@
 Asistente inteligente para organizar tareas y objetivos personales, con un chat de IA que ayuda a planificar el día.
 
 ## Estado del proyecto
-🚧 En desarrollo activo — backend con auth, tareas y eventos funcionando; chat con IA, estadísticas y frontend todavía por hacer (ver [Roadmap](#roadmap)).
+🚧 En desarrollo activo — backend con auth, tareas, eventos y chat con IA funcionando; frontend con el login/registro ya conectado al backend, falta la interfaz real de tareas/calendario/chat (ver [Roadmap](#roadmap)).
 
 ## Stack
-- **Frontend:** React + TypeScript (todavía no iniciado)
+- **Frontend:** React 19 + TypeScript, Vite, `react-router-dom`, `axios`
 - **Backend:** Python 3.12 + FastAPI
 - **Base de datos:** PostgreSQL (una instancia para desarrollo y otra, aparte, para tests)
 - **Auth:** JWT (access + refresh) con PyJWT, contraseñas con passlib/bcrypt
@@ -38,6 +38,7 @@ cp .env.example .env
 python -c "import secrets; print(secrets.token_hex(32))"
 # Y añade tu GROQ_API_KEY (https://console.groq.com/keys) -- solo hace falta
 # para el chat (POST /conversations/{id}/chat), el resto de la API funciona sin ella.
+# Si el frontend corre en otra URL que no sea localhost:5173, ajusta CORS_ORIGINS.
 
 # 4. Aplica las migraciones a la base de desarrollo
 alembic upgrade head
@@ -57,10 +58,23 @@ pytest
 
 Los tests corren contra su propia base de datos (el servicio `db_test` de `docker-compose.yml`, ya levantado en el paso 1), nunca contra la de desarrollo. Las migraciones de esa base de test se aplican automáticamente al arrancar la suite — no hace falta ningún paso manual aparte de tener `db_test` arriba.
 
+## Instalación (frontend)
+
+Con el backend ya arriba (paso anterior):
+
+```bash
+cd frontend
+npm install
+cp .env.example .env   # por defecto ya apunta a http://127.0.0.1:8000
+npm run dev
+```
+
+La app queda en `http://localhost:5173` (o el puerto que Vite elija si ese está ocupado — lo imprime al arrancar; si cambia, añádelo a `CORS_ORIGINS` en el `.env` del backend).
+
 ## Roadmap
 - [x] Backend base: CRUD de `Task` y `Event`, autenticación JWT (registro/login/refresh), endpoints protegidos y filtrados por usuario
-- [ ] Frontend base
+- [ ] Frontend: setup del proyecto, capa de API con refresh automático, y autenticación (login/registro/sesión persistida) ya funcionan; falta la interfaz de tareas, calendario y chat
 - [ ] Chat con IA para planificación diaria — `Conversation`/`ChatMessage` y `POST /conversations/{id}/chat` (Groq, con historial) ya funcionan; falta function calling y RAG sobre las tareas/eventos reales
 - [ ] Estadísticas
-- [x] Tests (pytest, base de datos de test dedicada) — falta CI/CD
+- [x] Tests (pytest, base de datos de test dedicada) — falta CI/CD y tests de frontend
 - [ ] Despliegue

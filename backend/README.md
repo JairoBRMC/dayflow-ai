@@ -68,12 +68,15 @@ Instrucciones de instalación y arranque en el [README de la raíz](../README.md
 
 Todos los endpoints bajo `/tasks`, `/events` y `/conversations` requieren autenticación (`Authorization: Bearer <access_token>`) y solo devuelven/afectan datos del usuario autenticado — intentar acceder a un recurso de otro usuario da `404`, igual que si no existiera.
 
+El backend tiene CORS habilitado (`CORS_ORIGINS` en `.env`, por defecto cubre `localhost:5173`/`127.0.0.1:5173`) para que el frontend en Vite pueda llamarlo directamente desde el navegador.
+
 ### Auth
 | Método y ruta | Descripción |
 |---|---|
 | `POST /auth/register` | Crea un usuario. Body JSON `{email, password}`. `400` si el email ya existe. |
 | `POST /auth/login` | Credenciales como form-data (`username` = email, `password`). Devuelve `{access_token, refresh_token, token_type}`. `401` si son incorrectas. |
 | `POST /auth/refresh` | Body JSON `{refresh_token}`. Devuelve un par de tokens nuevo. `401` si el refresh token no es válido, expiró, o es en realidad un access token. |
+| `GET /auth/me` | Devuelve el `UserOut` del usuario autenticado. Pensado para que el frontend sepa quién está logueado al cargar la página (con solo el `access_token` guardado, sin repetir credenciales). |
 
 El access token dura 30 minutos; el refresh, 7 días. No hay revocación de tokens (logout) todavía.
 
