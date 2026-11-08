@@ -1,0 +1,57 @@
+.task-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.task-form-row {
+    display: flex;
+    gap: 8px;
+}
+
+.task-form-title {
+    flex: 1;
+}
+
+.task-form input,
+.task-form select,
+.task-form textarea,
+.task-form button {
+    font: inherit;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-h);
+    box-sizing: border-box;
+}
+
+.task-form textarea {
+    width: 100%;
+    resize: vertical;
+}
+
+.task-form button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.task-form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.task-form-error {
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--accent-bg);
+    font-size: 14px;
+}

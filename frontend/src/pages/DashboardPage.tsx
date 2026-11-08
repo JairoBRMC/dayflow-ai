@@ -1,8 +1,9 @@
 import { useAuth } from "../context/useAuth";
+import { TasksPage } from "./TasksPage";
 import "./DashboardPage.css";
 
-// Placeholder de F3: solo demuestra que ProtectedRoute + AuthContext funcionan.
-// F4 (tareas), F5 (calendario) y F6 (chat) construyen el contenido real aquí.
+// Shell autenticado: cabecera con el usuario y logout, más el contenido de la fase
+// actual. El calendario y el chat añadirán su propia navegación cuando existan.
 export function DashboardPage() {
     const { user, logout } = useAuth();
 
@@ -14,7 +15,7 @@ export function DashboardPage() {
                     Cerrar sesión
                 </button>
             </header>
-            <p>Próximamente: tareas, calendario y chat.</p>
+            <TasksPage />
         </div>
     );
 }

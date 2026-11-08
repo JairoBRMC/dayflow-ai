@@ -3,7 +3,7 @@
 Asistente inteligente para organizar tareas y objetivos personales, con un chat de IA que ayuda a planificar el día.
 
 ## Estado del proyecto
-🚧 En desarrollo activo — backend con auth, tareas, eventos y chat con IA funcionando; frontend con el login/registro ya conectado al backend, falta la interfaz real de tareas/calendario/chat (ver [Roadmap](#roadmap)).
+🚧 En desarrollo activo — backend con auth, tareas, eventos y chat con IA funcionando; frontend con login/registro y la lista de tareas ya conectados al backend, falta calendario y chat (ver [Roadmap](#roadmap)).
 
 ## Stack
 - **Frontend:** React 19 + TypeScript, Vite, `react-router-dom`, `axios`
@@ -73,7 +73,7 @@ La app queda en `http://localhost:5173` (o el puerto que Vite elija si ese está
 
 ## Roadmap
 - [x] Backend base: CRUD de `Task` y `Event`, autenticación JWT (registro/login/refresh), endpoints protegidos y filtrados por usuario
-- [ ] Frontend: setup del proyecto, capa de API con refresh automático, y autenticación (login/registro/sesión persistida) ya funcionan; falta la interfaz de tareas, calendario y chat
+- [ ] Frontend: setup del proyecto, capa de API con refresh automático, autenticación (login/registro/sesión persistida) y la lista de tareas (crear, editar, borrar, filtrar por status/priority) ya funcionan; falta calendario y chat
 - [ ] Chat con IA para planificación diaria — `Conversation`/`ChatMessage` y `POST /conversations/{id}/chat` (Groq, con historial) ya funcionan; falta function calling y RAG sobre las tareas/eventos reales
 - [ ] Estadísticas
 - [x] Tests (pytest, base de datos de test dedicada) — falta CI/CD y tests de frontend
